@@ -1,0 +1,102 @@
+---
+title: "Machine_Learning_Project"
+author: "James Allison"
+date: "08/07/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Intro
+
+## Get Data
+The training and test data have been speficied to come from "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv" and "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv".
+
+``` {r get_data}
+training_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+download.file(training_url, "training_data.csv")
+training_data <- read.csv("training_data.csv", stringsAsFactors = F)
+
+test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+download.file(test_url, "test_data.csv")
+test_data <- read.csv("test_data.csv", stringsAsFactors = F)
+
+head(training_data)
+summary(training_data)
+```
+
+## Exploratory Data Analysis
+
+```{r exploratory_analysis}
+
+library(caret)
+library(tidyverse)
+library(randomForest)
+training_data %>%
+keep(is.numeric) %>%
+gather() %>%
+ggplot(aes(value)) +
+facet_wrap(~ key, scales = "free") +
+geom_histogram()
+
+
+```
+Can ditch X. All the other data looks normally distributed.
+
+## Preprossing
+
+I plan on first running a random forest classifer on the dataset. With that in mind I'm going to need to process the data.
+
+Firstly, it looks like we can drop the X, user_name, cvtd_timestamp, new_window, and num_window columns. I'll fill the remainging NAs with 0s. There's also rows that relate to aggregates of the data (new_window = "yes"), so I'll drop those too. I'll also need to turn the character columns to numeric columns.
+
+``` {r preprocssing}
+
+modified_training <- training_data %>%
+  filter(new_window == "no") %>%
+  select(-c(X, user_name, cvtd_timestamp, new_window, num_window)) %>%
+  mutate(classe=as.factor(classe)) %>%
+  mutate_if(is.character,as.numeric) %>%
+  mutate_all(funs(replace(., is.na(.), 0)))
+x <- modified_training[,1:154]
+y <- modified_training[,155]
+
+```
+x is our predictors and y is our outcome.
+## Model selection
+The first model I plan on testing is a random forest, for a couple of reasons.
+Most importantly, it has a classification method, which is the goal of the analysis. It automatically incorporates cross-validation and the out of sample error estimation, two more of the critera of the analysis.
+
+In the configuration I've set importance to True so that after the analysis we can see the importance of certain features. Proximity has also been set to true as the data looks to have a time element to it, so there's likely a relation between rows near each other.
+``` {r model_selection}
+
+set.seed(10101)
+model <- randomForest(x,y,nodesize = 1, importance = T, proximity = T)
+
+```
+
+The model appears to be fairly accurate on the training set. Each observation was held out of the training set between `r max(model$oob.times)` and `r min(model$oob.times)` out of 500 cycles. The out of bag error estimate was 0.16%, with the model least accurate on classifiying C and D, but still maintaining accuracy rates of greater than 99.5%.
+
+With this I don't think it nessacary to look at other models.
+
+## Testing
+
+To apply this model to the test dataset I'll need to run the same transformations first.
+
+``` {r testing}
+
+modified_test <- test_data %>%
+  filter(new_window == "no") %>%
+  select(-c(X, user_name, cvtd_timestamp, new_window, num_window)) %>%
+  mutate(classe=as.factor(classe)) %>%
+  mutate_if(is.character,as.numeric) %>%
+  mutate_all(funs(replace(., is.na(.), 0)))
+x <- modified_training[,1:154]
+
+modified_test$Prediction <- predict(model, x)
+
+table(modified_test$classe, modified_test$Prediction)
+```
+
+Testing the model on the training data set has resulted in an accuracy of 100%. While this is pleasing, I remain skepitcal that it will maintain this accuracy in the future.
