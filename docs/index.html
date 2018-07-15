@@ -139,7 +139,7 @@ $(document).ready(function () {
 download.file(training_url, &quot;training_data.csv&quot;)
 training_data &lt;- read.csv(&quot;training_data.csv&quot;, stringsAsFactors = F)
 
-test_url &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
+test_url &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;
 download.file(test_url, &quot;test_data.csv&quot;)
 test_data &lt;- read.csv(&quot;test_data.csv&quot;, stringsAsFactors = F)
 
@@ -808,12 +808,12 @@ head(training_data)</code></pre>
 <pre><code>## Loading required package: lattice</code></pre>
 <pre><code>## Loading required package: ggplot2</code></pre>
 <pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## ── Attaching packages ──────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
+<pre><code>## ── Attaching packages ─────────── tidyverse 1.2.1 ──</code></pre>
 <pre><code>## ✔ tibble  1.4.2     ✔ purrr   0.2.5
 ## ✔ tidyr   0.8.1     ✔ dplyr   0.7.6
 ## ✔ readr   1.1.1     ✔ stringr 1.3.1
 ## ✔ tibble  1.4.2     ✔ forcats 0.3.0</code></pre>
-<pre><code>## ── Conflicts ─────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+<pre><code>## ── Conflicts ────────────── tidyverse_conflicts() ──
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()
 ## ✖ purrr::lift()   masks caret::lift()</code></pre>
@@ -865,24 +865,35 @@ model &lt;- randomForest(x,y,nodesize = 1, importance = T, proximity = T)</code>
 <pre class="r"><code>modified_test &lt;- test_data %&gt;%
   filter(new_window == &quot;no&quot;) %&gt;%
   select(-c(X, user_name, cvtd_timestamp, new_window, num_window)) %&gt;%
-  mutate(classe=as.factor(classe)) %&gt;%
   mutate_if(is.character,as.numeric) %&gt;%
-  mutate_all(funs(replace(., is.na(.), 0)))</code></pre>
-<pre><code>## Warning in `[&lt;-.factor`(`*tmp*`, list, value = 0): invalid factor level, NA
-## generated</code></pre>
-<pre class="r"><code>x &lt;- modified_training[,1:154]
+  mutate_all(funs(replace(., is.na(.), 0)))
+x &lt;- modified_test[,1:154]
 
 modified_test$Prediction &lt;- predict(model, x)
 
-table(modified_test$classe, modified_test$Prediction)</code></pre>
-<pre><code>##    
-##        A    B    C    D    E
-##   A 5471    0    0    0    0
-##   B    0 3718    0    0    0
-##   C    0    0 3352    0    0
-##   D    0    0    0 3147    0
-##   E    0    0    0    0 3528</code></pre>
-<p>Testing the model on the training data set has resulted in an accuracy of 100%. While this is pleasing, I remain skepitcal that it will maintain this accuracy in the future.</p>
+table(modified_test$problem_id, modified_test$Prediction)</code></pre>
+<pre><code>##     
+##      A B C D E
+##   1  0 1 0 0 0
+##   2  1 0 0 0 0
+##   3  0 1 0 0 0
+##   4  1 0 0 0 0
+##   5  1 0 0 0 0
+##   6  0 0 0 0 1
+##   7  0 0 0 1 0
+##   8  0 1 0 0 0
+##   9  1 0 0 0 0
+##   10 1 0 0 0 0
+##   11 0 1 0 0 0
+##   12 0 0 1 0 0
+##   13 0 1 0 0 0
+##   14 1 0 0 0 0
+##   15 0 0 0 0 1
+##   16 0 0 0 0 1
+##   17 1 0 0 0 0
+##   18 0 1 0 0 0
+##   19 0 1 0 0 0
+##   20 0 1 0 0 0</code></pre>
 </div>
 
 

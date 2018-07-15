@@ -19,7 +19,7 @@ training_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-trainin
 download.file(training_url, "training_data.csv")
 training_data <- read.csv("training_data.csv", stringsAsFactors = F)
 
-test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
 download.file(test_url, "test_data.csv")
 test_data <- read.csv("test_data.csv", stringsAsFactors = F)
 
@@ -89,14 +89,12 @@ To apply this model to the test dataset I'll need to run the same transformation
 modified_test <- test_data %>%
   filter(new_window == "no") %>%
   select(-c(X, user_name, cvtd_timestamp, new_window, num_window)) %>%
-  mutate(classe=as.factor(classe)) %>%
   mutate_if(is.character,as.numeric) %>%
   mutate_all(funs(replace(., is.na(.), 0)))
-x <- modified_training[,1:154]
+x <- modified_test[,1:154]
 
 modified_test$Prediction <- predict(model, x)
 
-table(modified_test$classe, modified_test$Prediction)
+table(modified_test$problem_id, modified_test$Prediction)
 ```
 
-Testing the model on the training data set has resulted in an accuracy of 100%. While this is pleasing, I remain skepitcal that it will maintain this accuracy in the future.
